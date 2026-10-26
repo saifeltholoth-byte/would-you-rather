@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Would You Rather? - Ultimate Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            pink: '#FF007A',
+                            purple: '#7B2CBF',
+                            cyan: '#00F0FF',
+                            dark: '#0A0E17',
+                            card: '#131B2E',
+                            cardHover: '#1A243D'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.5s ease-in-out 1',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 15px rgba(255, 0, 122, 0.3)' },
+                            '100%': { boxShadow: '0 0 30px rgba(0, 240, 255, 0.6)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #07090E;
+            color: #F1F5F9;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .card-option {
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-option:hover {
+            transform: translateY(-6px) scale(1.015);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .vs-badge {
+            background: linear-gradient(135deg, #FF007A 0%, #7B2CBF 50%, #00F0FF 100%);
+            box-shadow: 0 0 25px rgba(123, 44, 191, 0.6);
+        }
+        .progress-bar-fill {
+            transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans antialiased text-slate-100 selection:bg-purple-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-white/10 px-4 py-3 sm:px-8">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-purple-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
+                    <i class="fa-solid font-black text-lg fa-bolt"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-purple-300 bg-clip-text text-transparent">
+                        Would You Rather?
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium hidden sm:block">Choose your side • Live Community Insights</p>
+                </div>
+            </div>
+
+            <!-- Feed Mode Toggle & Stats Bar -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                
+                <!-- Mode Switcher (Featured vs Community) -->
+                <div class="bg-slate-900/90 p-1 rounded-full border border-white/10 flex items-center shadow-inner">
+                    <button id="btn-mode-featured" onclick="setFeedMode('featured')" class="px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md">
+                        <i class="fa-solid fa-star text-[10px]"></i>
+                        <span>Featured</span>
+                    </button>
+                    <button id="btn-mode-community" onclick="setFeedMode('community')" class="px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-users text-[10px]"></i>
+                        <span>Community</span>
+                        <span id="community-count-badge" class="ml-1 px-1.5 py-0.2 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-full">12</span>
+                    </button>
+                </div>
+
+                <!-- Stats Counters -->
+                <div class="hidden md:flex items-center space-x-3 bg-slate-900/60 border border-white/10 rounded-xl px-3 py-1.5">
+                    <div class="flex items-center space-x-1.5 text-xs font-semibold text-amber-400" title="Streak">
+                        <i class="fa-solid fa-fire text-amber-500 animate-pulse"></i>
+                        <span id="streak-counter">0</span>
+                    </div>
+                    <div class="w-px h-3 bg-white/10"></div>
+                    <div class="flex items-center space-x-1.5 text-xs font-semibold text-cyan-400" title="Questions Answered">
+                        <i class="fa-solid fa-[#00F0FF] fa-circle-check"></i>
+                        <span id="answered-counter">0</span>
+                    </div>
+                </div>
+
+                <!-- Sound Toggle -->
+                <button id="sound-toggle-btn" onclick="toggleSound()" class="w-9 h-9 rounded-xl glass-button flex items-center justify-center text-slate-300 hover:text-white transition" title="Toggle Sound">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+
+                <!-- Add Question Modal Trigger Button -->
+                <button onclick="openModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center space-x-1.5 transition transform active:scale-95">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span class="hidden sm:inline">Add Question</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center">
+
+        <!-- Category Selector Bar -->
+        <div id="category-section" class="mb-6 overflow-x-auto hide-scrollbar pb-2">
+            <div class="flex items-center space-x-2 min-w-max" id="categories-container">
+                <!-- Dynamically populated categories -->
+            </div>
+        </div>
+
+        <!-- Community Sub-Header / Filters (Visible in Community Feed Mode) -->
+        <div id="community-filter-bar" class="hidden mb-6 glass-panel rounded-2xl p-4 border border-cyan-500/20 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></div>
+                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Live Public Community Deck</span>
+                <span class="text-xs text-slate-400 hidden sm:inline">• Real-time prompts from players worldwide</span>
+            </div>
+
+            <!-- Sorting Tabs -->
+            <div class="flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-white/10 text-xs">
+                <button onclick="sortCommunityFeed('trending')" id="sort-trending" class="px-3 py-1 rounded-lg font-bold bg-purple-600 text-white transition">
+                    <i class="fa-solid fa-fire text-[10px] mr-1"></i>Trending
+                </button>
+                <button onclick="sortCommunityFeed('newest')" id="sort-newest" class="px-3 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-clock text-[10px] mr-1"></i>Newest
+                </button>
+                <button onclick="sortCommunityFeed('top')" id="sort-top" class="px-3 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-thumbs-up text-[10px] mr-1"></i>Most Voted
+                </button>
+            </div>
+        </div>
+
+        <!-- Prompt Card Deck Container -->
+        <div class="relative min-h-[420px] flex flex-col justify-center">
+            
+            <!-- User / Author Meta Tag for Community Posts -->
+            <div id="author-badge-container" class="hidden justify-center mb-4">
+                <div class="inline-flex items-center space-x-2 bg-slate-900/90 border border-cyan-500/30 rounded-full px-4 py-1.5 shadow-lg shadow-cyan-500/10">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 flex items-center justify-center text-[10px] font-black text-slate-950" id="author-avatar">
+                        U
+                    </div>
+                    <span class="text-xs font-bold text-slate-200" id="author-name">@CommunityUser</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30" id="author-time">2 mins ago</span>
+                    <button onclick="upvoteCurrentCommunityPrompt()" id="upvote-btn" class="ml-2 hover:scale-110 active:scale-95 transition text-xs text-slate-400 hover:text-pink-400 flex items-center space-x-1">
+                        <i class="fa-solid fa-heart"></i>
+                        <span id="upvote-count" class="font-bold">24</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Choice Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-10">
+                
+                <!-- Option A Card -->
+                <div id="card-a" onclick="handleChoice('a')" class="card-option group relative glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between cursor-pointer border border-pink-500/20 hover:border-pink-500/60 overflow-hidden min-h-[220px] sm:min-h-[260px]">
+                    
+                    <!-- Ambient Glow -->
+                    <div class="absolute -right-12 -bottom-12 w-40 h-40 bg-pink-600/15 rounded-full blur-3xl group-hover:bg-pink-600/30 transition duration-500"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold tracking-widest text-pink-400 uppercase bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">
+                                Option A
+                            </span>
+                            <span id="selected-indicator-a" class="hidden text-xs font-bold text-pink-400 flex items-center space-x-1">
+                                <i class="fa-solid fa-circle-check text-sm"></i>
+                                <span>Your Pick</span>
+                            </span>
+                        </div>
+                        <h2 id="text-option-a" class="text-xl sm:text-2xl font-bold text-white group-hover:text-pink-100 transition leading-snug">
+                            Loading Option A...
+                        </h2>
+                    </div>
+
+                    <!-- Percentage & Results Section (Revealed on click) -->
+                    <div id="results-a" class="relative z-10 mt-6 hidden">
+                        <div class="flex justify-between items-end mb-2">
+                            <span id="percent-a" class="text-3xl sm:text-4xl font-extrabold text-pink-400 tracking-tight">0%</span>
+                            <span id="votes-a" class="text-xs font-medium text-slate-400">0 votes</span>
+                        </div>
+                        <!-- Progress Bar Container -->
+                        <div class="w-full h-3.5 bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-white/10">
+                            <div id="bar-a" class="progress-bar-fill h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full w-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center VS Badge -->
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                    <div class="vs-badge w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-sm sm:text-base tracking-wider shadow-2xl border-2 border-white/20 transform rotate-12 group-hover:rotate-0 transition">
+                        VS
+                    </div>
+                </div>
+
+                <!-- Option B Card -->
+                <div id="card-b" onclick="handleChoice('b')" class="card-option group relative glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between cursor-pointer border border-cyan-500/20 hover:border-cyan-500/60 overflow-hidden min-h-[220px] sm:min-h-[260px]">
+                    
+                    <!-- Ambient Glow -->
+                    <div class="absolute -left-12 -bottom-12 w-40 h-40 bg-cyan-600/15 rounded-full blur-3xl group-hover:bg-cyan-600/30 transition duration-500"></div>
+
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-bold tracking-widest text-cyan-400 uppercase bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                                Option B
+                            </span>
+                            <span id="selected-indicator-b" class="hidden text-xs font-bold text-cyan-400 flex items-center space-x-1">
+                                <i class="fa-solid fa-circle-check text-sm"></i>
+                                <span>Your Pick</span>
+                            </span>
+                        </div>
+                        <h2 id="text-option-b" class="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-100 transition leading-snug">
+                            Loading Option B...
+                        </h2>
+                    </div>
+
+                    <!-- Percentage & Results Section (Revealed on click) -->
+                    <div id="results-b" class="relative z-10 mt-6 hidden">
+                        <div class="flex justify-between items-end mb-2">
+                            <span id="percent-b" class="text-3xl sm:text-4xl font-extrabold text-cyan-400 tracking-tight">0%</span>
+                            <span id="votes-b" class="text-xs font-medium text-slate-400">0 votes</span>
+                        </div>
+                        <!-- Progress Bar Container -->
+                        <div class="w-full h-3.5 bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-white/10">
+                            <div id="bar-b" class="progress-bar-fill h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full w-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Action Toolbar (Next Question / Share) -->
+            <div id="action-bar" class="mt-8 flex flex-wrap items-center justify-center gap-4 transition opacity-100">
+                <button id="next-btn" onclick="nextQuestion()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl shadow-purple-600/30 flex items-center space-x-2 transition transform active:scale-95 group">
+                    <span>Next Prompt</span>
+                    <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition"></i>
+                </button>
+
+                <button onclick="sharePrompt()" class="px-5 py-3.5 rounded-2xl glass-button text-slate-200 hover:text-white font-bold text-sm flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-share-nodes text-xs text-purple-400"></i>
+                    <span>Share This</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Status -->
+    <footer class="glass-panel border-t border-white/10 py-4 px-4 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                <span class="font-semibold text-slate-300">Would You Rather? Community Edition</span> • Powered by Live Global Feeds
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="resetStats()" class="hover:text-pink-400 transition">Reset My Data</button>
+                <span>•</span>
+                <span id="total-community-prompts-footer">50+ Prompts Available</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add Custom Prompt Modal -->
+    <div id="modal-add-prompt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden transition duration-300">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative animate-bounce-short">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full glass-button flex items-center justify-center text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
+                    <i class="fa-solid fa-bullhorn text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Submit to Public Feed</h3>
+                    <p class="text-xs text-slate-400">Publish your question for players around the world</p>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="custom-prompt-form" onsubmit="handleCustomSubmit(event)" class="space-y-4">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Your Username / Handle</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3 text-slate-500 text-sm">@</span>
+                        <input type="text" id="custom-author" required placeholder="player_one" maxlength="20"
+                            class="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-cyan-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Category</label>
+                    <select id="custom-category" class="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-purple-500 transition">
+                        <option value="general">General & Funny</option>
+                        <option value="superpowers">Superpowers</option>
+                        <option value="impossible">Impossible Scenarios</option>
+                        <option value="food">Food & Life</option>
+                        <option value="tech">Gaming & Tech</option>
+                        <option value="sports">Sports & Athletics</option>
+                        <option value="deep">Deep Thoughts</option>
+                        <option value="extreme">Extreme Challenges</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-pink-400 uppercase tracking-wider mb-2">Option A</label>
+                    <input type="text" id="custom-option-a" required placeholder="e.g. Have infinite coffee forever" maxlength="120"
+                        class="w-full bg-slate-900/90 border border-pink-500/30 rounded-xl px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-pink-500 transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Option B</label>
+                    <input type="text" id="custom-option-b" required placeholder="e.g. Never need to sleep again" maxlength="120"
+                        class="w-full bg-slate-900/90 border border-cyan-500/30 rounded-xl px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-cyan-500 transition">
+                </div>
+
+                <div class="pt-3">
+                    <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:from-pink-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl shadow-purple-600/30 transition transform active:scale-98">
+                        Publish Prompt to Public Feed
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 glass-panel px-5 py-3 rounded-2xl border border-cyan-500/30 flex items-center space-x-3 text-xs font-bold text-slate-200 shadow-2xl transition duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+        <span id="toast-message">Action successful!</span>
+    </div>
+
+    <!-- Game Logic JavaScript -->
+    <script>
+        // --- Question Databases ---
+        const featuredQuestions = [
+            // Featured Opener
+            { id: 0, cat: 'food', a: "Only eat shawarma for the rest of your life", b: "Only eat pizza for the rest of your life", votesA: 3420, votesB: 3120 },
+
+            // General & Funny
+            { id: 1, cat: 'general', a: "Have a pause button for your life", b: "Have a rewind button for your life", votesA: 1420, votesB: 1890 },
+            { id: 2, cat: 'general', a: "Always have to sing instead of speaking", b: "Always have to dance everywhere you walk", votesA: 980, votesB: 1120 },
+            { id: 3, cat: 'general', a: "Fight 100 duck-sized horses", b: "Fight 1 horse-sized duck", votesA: 2310, votesB: 890 },
+            { id: 4, cat: 'general', a: "Have a bottomless bank account", b: "Have endless free travel anywhere forever", votesA: 3100, votesB: 2450 },
+            { id: 5, cat: 'general', a: "Be able to read minds", b: "Be able to accurately see the future", votesA: 1750, votesB: 2100 },
+
+            // Superpowers
+            { id: 6, cat: 'superpowers', a: "Possess the power of Flight", b: "Possess the power of Teleportation", votesA: 1200, votesB: 4100 },
+            { id: 7, cat: 'superpowers', a: "Be completely Invisible at will", b: "Have Super Strength like Superman", votesA: 2800, votesB: 1450 },
+            { id: 8, cat: 'superpowers', a: "Control Fire with your hands", b: "Control Water and Ice", votesA: 1950, votesB: 2100 },
+
+            // Impossible Scenarios
+            { id: 10, cat: 'impossible', a: "Live 100 years in the past", b: "Live 100 years in the future", votesA: 950, votesB: 3400 },
+            { id: 11, cat: 'impossible', a: "Explore the deepest depths of the Ocean", b: "Explore outer Space and alien worlds", votesA: 1300, votesB: 3900 },
+
+            // Food & Life
+            { id: 14, cat: 'food', a: "Only eat Savory food for the rest of your life", b: "Only eat Sweet food for the rest of your life", votesA: 2900, votesB: 1100 },
+            { id: 15, cat: 'food', a: "Give up Pizza forever", b: "Give up Tacos & Burgers forever", votesA: 1600, votesB: 2300 },
+
+            // Gaming & Tech
+            { id: 33, cat: 'tech', a: "Be trapped inside Minecraft on Survival Mode for a month", b: "Be trapped inside Grand Theft Auto with 3-star wanted level for a week", votesA: 3450, votesB: 980 },
+            { id: 34, cat: 'tech', a: "Have a 100% full phone battery forever", b: "Have free blazing fast 5G Wi-Fi anywhere in the world", votesA: 1890, votesB: 4120 },
+
+            // Sports & Athletics
+            { id: 37, cat: 'sports', a: "Win an Olympic Gold Medal in an individual sport", b: "Win the FIFA World Cup / Super Bowl with your national team", votesA: 2890, votesB: 3210 },
+
+            // Deep Thoughts
+            { id: 45, cat: 'deep', a: "Know the truth behind every conspiracy theory in history", b: "Know the answer to every unsolved scientific mystery", votesA: 2650, votesB: 3890 },
+
+            // Extreme Challenges
+            { id: 49, cat: 'extreme', a: "Spend 30 days alone in a solitary pitch-black room with food", b: "Spend 30 days in a wild wilderness with only a pocket knife", votesA: 1120, votesB: 3450 }
+        ];
+
+        // Simulated Live Public Community Feed Questions
+        const defaultCommunityQuestions = [
+            { id: 'c101', cat: 'tech', author: 'cyber_coder', time: '3 mins ago', likes: 142, a: "Code in Dark Mode with light theme contrast", b: "Code in Light Mode on maximum brightness", votesA: 1850, votesB: 410 },
+            { id: 'c102', cat: 'food', author: 'chef_marco', time: '12 mins ago', likes: 89, a: "Put Pineapple on every pizza you ever eat", b: "Never be allowed to use garlic or onion again", votesA: 1240, votesB: 2310 },
+            { id: 'c103', cat: 'superpowers', author: 'hero_mode', time: '25 mins ago', likes: 215, a: "Speak every human language fluently", b: "Communicate perfectly with all marine life", votesA: 3910, votesB: 1200 },
+            { id: 'c104', cat: 'deep', author: 'philosopher_99', time: '1 hour ago', likes: 310, a: "Know the exact date of your future success", b: "Know every decision that will lead to a mistake", votesA: 2450, votesB: 2890 },
+            { id: 'c105', cat: 'general', author: 'silly_sam', time: '2 hours ago', likes: 76, a: "Have a tiny dragon as a loyal pet", b: "Have a giant friendly capybara you can ride", votesA: 3210, votesB: 2980 },
+            { id: 'c106', cat: 'extreme', author: 'adrenaline_junkie', time: '4 hours ago', likes: 188, a: "Climb Mount Everest without oxygen support", b: "Free dive to 100m depth without scuba gear", votesA: 890, votesB: 1420 }
+        ];
+
+        const categories = [
+            { id: 'all', name: 'All Prompts', icon: 'fa-cubes' },
+            { id: 'general', name: 'General & Funny', icon: 'fa-laugh-beam' },
+            { id: 'superpowers', name: 'Superpowers', icon: 'fa-bolt' },
+            { id: 'impossible', name: 'Impossible', icon: 'fa-infinity' },
+            { id: 'food', name: 'Food & Life', icon: 'fa-utensils' },
+            { id: 'tech', name: 'Gaming & Tech', icon: 'fa-gamepad' },
+            { id: 'sports', name: 'Sports & Athletics', icon: 'fa-trophy' },
+            { id: 'deep', name: 'Deep Thoughts', icon: 'fa-brain' },
+            { id: 'extreme', name: 'Extreme Challenges', icon: 'fa-fire' }
+        ];
+
+        // --- App State ---
+        let currentFeedMode = 'featured'; // 'featured' or 'community'
+        let communitySortMode = 'trending'; // 'trending', 'newest', 'top'
+        let activeCategory = 'all';
+        let currentQuestionIndex = 0;
+        let hasVotedCurrent = false;
+        let streak = 0;
+        let totalAnswered = 0;
+        let soundEnabled = true;
+
+        // User Saved Data
+        let communityDeck = [];
+        let userVotedIds = new Set();
+        let upvotedCommunityIds = new Set();
+
+        // Audio Context (Web Audio API)
+        let audioCtx = null;
+
+        // --- Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorageData();
+            renderCategories();
+            updateStatsUI();
+            updateCommunityBadgeCount();
+            loadQuestionDeck();
+        });
+
+        // --- Local Storage Management ---
+        function loadLocalStorageData() {
+            const savedCommunity = localStorage.getItem('wyr_community_deck_v2');
+            if (savedCommunity) {
+                try {
+                    communityDeck = JSON.parse(savedCommunity);
+                } catch (e) {
+                    communityDeck = [...defaultCommunityQuestions];
+                }
+            } else {
+                communityDeck = [...defaultCommunityQuestions];
+            }
+
+            const savedVotes = localStorage.getItem('wyr_user_votes');
+            if (savedVotes) {
+                try { userVotedIds = new Set(JSON.parse(savedVotes)); } catch(e){}
+            }
+
+            const savedUpvotes = localStorage.getItem('wyr_user_upvotes');
+            if (savedUpvotes) {
+                try { upvotedCommunityIds = new Set(JSON.parse(savedUpvotes)); } catch(e){}
+            }
+
+            streak = parseInt(localStorage.getItem('wyr_streak') || '0');
+            totalAnswered = parseInt(localStorage.getItem('wyr_answered') || '0');
+        }
+
+        function saveState() {
+            localStorage.setItem('wyr_community_deck_v2', JSON.stringify(communityDeck));
+            localStorage.setItem('wyr_user_votes', JSON.stringify(Array.from(userVotedIds)));
+            localStorage.setItem('wyr_user_upvotes', JSON.stringify(Array.from(upvotedCommunityIds)));
+            localStorage.setItem('wyr_streak', streak.toString());
+            localStorage.setItem('wyr_answered', totalAnswered.toString());
+            updateCommunityBadgeCount();
+        }
+
+        // --- Navigation Mode & Category Handling ---
+        function setFeedMode(mode) {
+            currentFeedMode = mode;
+            currentQuestionIndex = 0;
+
+            const btnFeatured = document.getElementById('btn-mode-featured');
+            const btnCommunity = document.getElementById('btn-mode-community');
+            const commBar = document.getElementById('community-filter-bar');
+
+            if (mode === 'featured') {
+                btnFeatured.className = "px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md";
+                btnCommunity.className = "px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 text-slate-400 hover:text-white";
+                commBar.classList.add('hidden');
+            } else {
+                btnCommunity.className = "px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md";
+                btnFeatured.className = "px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center space-x-1.5 text-slate-400 hover:text-white";
+                commBar.classList.remove('hidden');
+            }
+
+            playSound('click');
+            loadQuestionDeck();
+        }
+
+        function sortCommunityFeed(sort) {
+            communitySortMode = sort;
+            ['trending', 'newest', 'top'].forEach(s => {
+                const btn = document.getElementById(`sort-${s}`);
+                if (s === sort) {
+                    btn.className = "px-3 py-1 rounded-lg font-bold bg-purple-600 text-white transition";
+                } else {
+                    btn.className = "px-3 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition";
+                }
+            });
+            
+            // Re-sort deck
+            if (sort === 'newest') {
+                communityDeck.reverse();
+            } else if (sort === 'top') {
+                communityDeck.sort((a, b) => (b.votesA + b.votesB) - (a.votesA + a.votesB));
+            } else {
+                communityDeck.sort((a, b) => b.likes - a.likes);
+            }
+
+            currentQuestionIndex = 0;
+            loadQuestionDeck();
+            showToast(`Sorted feed by ${sort.toUpperCase()}`);
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                const isActive = cat.id === activeCategory;
+                const btn = document.createElement('button');
+                btn.onclick = () => selectCategory(cat.id);
+                btn.className = `px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition ${
+                    isActive 
+                    ? 'bg-white/15 text-white border border-white/20 shadow-lg' 
+                    : 'glass-button text-slate-400 hover:text-white'
+                }`;
+                btn.innerHTML = `<i class="fa-solid ${cat.icon}"></i><span>${cat.name}</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCategory(catId) {
+            activeCategory = catId;
+            currentQuestionIndex = 0;
+            renderCategories();
+            playSound('click');
+            loadQuestionDeck();
+        }
+
+        function getCurrentDeck() {
+            let deck = currentFeedMode === 'featured' ? featuredQuestions : communityDeck;
+            if (activeCategory !== 'all') {
+                deck = deck.filter(q => q.cat === activeCategory);
+            }
+            return deck;
+        }
+
+        // --- Render Current Question ---
+        function loadQuestionDeck() {
+            const deck = getCurrentDeck();
+            const authorBox = document.getElementById('author-badge-container');
+
+            if (!deck || deck.length === 0) {
+                document.getElementById('text-option-a').textContent = "No prompts available in this category!";
+                document.getElementById('text-option-b').textContent = "Submit a custom prompt to start the feed!";
+                resetCardUI();
+                authorBox.classList.add('hidden');
+                return;
+            }
+
+            if (currentQuestionIndex >= deck.length) {
+                currentQuestionIndex = 0; // Loop back
+            }
+
+            const q = deck[currentQuestionIndex];
+            hasVotedCurrent = userVotedIds.has(q.id);
+
+            // Populate Card Texts
+            document.getElementById('text-option-a').textContent = q.a;
+            document.getElementById('text-option-b').textContent = q.b;
+
+            // Render Author Badge for Community Items
+            if (currentFeedMode === 'community' && q.author) {
+                authorBox.classList.remove('hidden');
+                authorBox.classList.add('flex');
+                document.getElementById('author-name').textContent = `@${q.author}`;
+                document.getElementById('author-avatar').textContent = q.author.charAt(0).toUpperCase();
+                document.getElementById('author-time').textContent = q.time || 'Recently';
+                document.getElementById('upvote-count').textContent = q.likes || 0;
+
+                const isUpvoted = upvotedCommunityIds.has(q.id);
+                const upBtn = document.getElementById('upvote-btn');
+                upBtn.className = isUpvoted ? 'ml-2 text-xs text-pink-500 font-bold flex items-center space-x-1 scale-105' : 'ml-2 hover:scale-110 active:scale-95 transition text-xs text-slate-400 hover:text-pink-400 flex items-center space-x-1';
+            } else {
+                authorBox.classList.add('hidden');
+            }
+
+            resetCardUI();
+
+            if (hasVotedCurrent) {
+                // If already voted previously, show results directly
+                renderResults(q, null);
+            }
+        }
+
+        function resetCardUI() {
+            ['a', 'b'].forEach(opt => {
+                const card = document.getElementById(`card-${opt}`);
+                const results = document.getElementById(`results-${opt}`);
+                const indicator = document.getElementById(`selected-indicator-${opt}`);
+                
+                results.classList.add('hidden');
+                indicator.classList.add('hidden');
+                card.style.pointerEvents = 'auto';
+                card.classList.remove('opacity-60', 'scale-98', 'border-pink-500', 'border-cyan-500');
+            });
+            document.getElementById('next-btn').classList.remove('animate-pulse');
+        }
+
+        // --- Handle User Vote ---
+        function handleChoice(option) {
+            if (hasVotedCurrent) return;
+
+            const deck = getCurrentDeck();
+            const q = deck[currentQuestionIndex];
+
+            // Update Vote Numbers
+            if (option === 'a') q.votesA += 1;
+            else q.votesB += 1;
+
+            hasVotedCurrent = true;
+            userVotedIds.add(q.id);
+
+            // Update Stats
+            streak += 1;
+            totalAnswered += 1;
+            saveState();
+            updateStatsUI();
+
+            // Sound & Confetti
+            playSound('vote');
+            triggerConfetti();
+
+            // Render UI
+            renderResults(q, option);
+        }
+
+        function renderResults(q, userPick) {
+            const total = q.votesA + q.votesB;
+            const pctA = Math.round((q.votesA / total) * 100) || 50;
+            const pctB = 100 - pctA;
+
+            ['a', 'b'].forEach(opt => {
+                const card = document.getElementById(`card-${opt}`);
+                const results = document.getElementById(`results-${opt}`);
+                const indicator = document.getElementById(`selected-indicator-${opt}`);
+                const percentText = document.getElementById(`percent-${opt}`);
+                const votesText = document.getElementById(`votes-${opt}`);
+                const bar = document.getElementById(`bar-${opt}`);
+
+                results.classList.remove('hidden');
+                card.style.pointerEvents = 'none';
+
+                if (opt === 'a') {
+                    percentText.textContent = `${pctA}%`;
+                    votesText.textContent = `${q.votesA.toLocaleString()} votes`;
+                    setTimeout(() => { bar.style.width = `${pctA}%`; }, 50);
+                } else {
+                    percentText.textContent = `${pctB}%`;
+                    votesText.textContent = `${q.votesB.toLocaleString()} votes`;
+                    setTimeout(() => { bar.style.width = `${pctB}%`; }, 50);
+                }
+
+                if (userPick === opt) {
+                    indicator.classList.remove('hidden');
+                } else if (userPick !== null) {
+                    card.classList.add('opacity-70');
+                }
+            });
+
+            document.getElementById('next-btn').classList.add('animate-pulse');
+        }
+
+        function nextQuestion() {
+            const deck = getCurrentDeck();
+            if (deck.length === 0) return;
+
+            currentQuestionIndex = (currentQuestionIndex + 1) % deck.length;
+            playSound('click');
+            loadQuestionDeck();
+        }
+
+        // --- Upvote Community Prompt ---
+        function upvoteCurrentCommunityPrompt() {
+            if (currentFeedMode !== 'community') return;
+            const deck = getCurrentDeck();
+            const q = deck[currentQuestionIndex];
+            if (!q) return;
+
+            if (upvotedCommunityIds.has(q.id)) {
+                q.likes -= 1;
+                upvotedCommunityIds.delete(q.id);
+                showToast('Removed upvote');
+            } else {
+                q.likes = (q.likes || 0) + 1;
+                upvotedCommunityIds.add(q.id);
+                playSound('vote');
+                showToast('Upvoted prompt!');
+            }
+
+            saveState();
+            document.getElementById('upvote-count').textContent = q.likes;
+            const upBtn = document.getElementById('upvote-btn');
+            const isUpvoted = upvotedCommunityIds.has(q.id);
+            upBtn.className = isUpvoted ? 'ml-2 text-xs text-pink-500 font-bold flex items-center space-x-1 scale-105' : 'ml-2 hover:scale-110 active:scale-95 transition text-xs text-slate-400 hover:text-pink-400 flex items-center space-x-1';
+        }
+
+        // --- Modal & Custom Prompt Submission ---
+        function openModal() {
+            document.getElementById('modal-add-prompt').classList.remove('hidden');
+            playSound('click');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-add-prompt').classList.add('hidden');
+        }
+
+        function handleCustomSubmit(e) {
+            e.preventDefault();
+            const author = document.getElementById('custom-author').value.trim() || 'Anonymous';
+            const cat = document.getElementById('custom-category').value;
+            const optA = document.getElementById('custom-option-a').value.trim();
+            const optB = document.getElementById('custom-option-b').value.trim();
+
+            if (!optA || !optB) return;
+
+            const newPrompt = {
+                id: 'custom_' + Date.now(),
+                cat: cat,
+                author: author.replace('@', ''),
+                time: 'JUST NOW',
+                likes: 1,
+                a: optA,
+                b: optB,
+                votesA: 1,
+                votesB: 0
+            };
+
+            // Add to top of community deck
+            communityDeck.unshift(newPrompt);
+            saveState();
+
+            // Reset form
+            document.getElementById('custom-prompt-form').reset();
+            closeModal();
+
+            // Switch to community feed & show
+            setFeedMode('community');
+            currentQuestionIndex = 0;
+            loadQuestionDeck();
+
+            showToast('Published to Community Feed!');
+            triggerConfetti();
+        }
+
+        // --- Helper Utilities ---
+        function updateStatsUI() {
+            document.getElementById('streak-counter').textContent = streak;
+            document.getElementById('answered-counter').textContent = totalAnswered;
+        }
+
+        function updateCommunityBadgeCount() {
+            document.getElementById('community-count-badge').textContent = communityDeck.length;
+            document.getElementById('total-community-prompts-footer').textContent = `${featuredQuestions.length + communityDeck.length} Total Prompts`;
+        }
+
+        function resetStats() {
+            streak = 0;
+            totalAnswered = 0;
+            userVotedIds.clear();
+            saveState();
+            updateStatsUI();
+            loadQuestionDeck();
+            showToast('Your personal stats have been reset');
+        }
+
+        function sharePrompt() {
+            const deck = getCurrentDeck();
+            const q = deck[currentQuestionIndex];
+            if (!q) return;
+
+            const shareText = `Would You Rather?\nA: ${q.a}\nOR\nB: ${q.b}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText);
+                showToast('Prompt copied to clipboard!');
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = shareText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Prompt copied to clipboard!');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // --- Sound Effects (Web Audio API) ---
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high text-xs' : 'fa-solid fa-volume-xmark text-xs text-rose-400';
+            showToast(soundEnabled ? 'Sound FX Enabled' : 'Sound FX Muted');
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'vote') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                }
+            } catch(e) {
+                // Audio context blocked or unsupported
+            }
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 45,
+                    spread: 60,
+                    origin: { y: 0.8 },
+                    colors: ['#FF007A', '#7B2CBF', '#00F0FF']
+                });
+            }
+        }
+    </script>
+</body>
+</html>
